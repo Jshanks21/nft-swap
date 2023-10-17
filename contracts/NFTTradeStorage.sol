@@ -15,10 +15,10 @@ contract NFTTradeStorage is Ownable, ReentrancyGuard, Pausable {
 
     struct Trade {
         address proposer;
-        IERC721Enumerable token1;
-        IERC721Enumerable token2;
-        uint256 tokenId1;
-        uint256 tokenId2;
+        IERC721Enumerable tokenOffered;
+        IERC721Enumerable tokenRequested;
+        uint256 offeredTokenId;
+        uint256 requestedTokenId;
         TradeStatus status;
     }
 

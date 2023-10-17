@@ -65,10 +65,10 @@ contract NFTTradeLogic is
 
         Trade memory newTrade = Trade({
             proposer: _msgSender(),
-            token1: _token1,
-            token2: _token2,
-            tokenId1: _tokenId1,
-            tokenId2: _tokenId2,
+            tokenOffered: _token1,
+            tokenRequested: _token2,
+            offeredTokenId: _tokenId1,
+            requestedTokenId: _tokenId2,
             status: TradeStatus.Proposed
         });
 
@@ -95,7 +95,7 @@ contract NFTTradeLogic is
         Trade storage trade = trades[_tradeId];
 
         require(
-            _msgSender() == IERC721(trade.token2).ownerOf(trade.tokenId2),
+            _msgSender() == IERC721(trade.tokenRequested).ownerOf(trade.requestedTokenId),
             "Only a current NFT holder can accept the trade."
         );
         require(
@@ -103,35 +103,34 @@ contract NFTTradeLogic is
             "Trade is not in Proposed state."
         );
         require(
-            IERC721(trade.token1).getApproved(trade.tokenId1) == address(this),
+            IERC721(trade.tokenOffered).getApproved(trade.offeredTokenId) == address(this),
             "NFT 1 not approved for trade by holder."
         );
         require(
-            IERC721(trade.token2).getApproved(trade.tokenId2) == address(this),
+            IERC721(trade.tokenRequested).getApproved(trade.requestedTokenId) == address(this),
             "NFT 2 not approved for trade by holder."
         );
 
-        if (trade.proposer != IERC721(trade.token1).ownerOf(trade.tokenId1)) {
+        if (trade.proposer != IERC721(trade.tokenOffered).ownerOf(trade.offeredTokenId)) {
             trade.status = TradeStatus.Cancelled;
-            emit TradeCancelled(_tradeId, trade.proposer);
             revert("Proposer no longer holds NFT to trade. Trade Cancelled.");
         }
 
-        IERC721(trade.token1).safeTransferFrom(
+        IERC721(trade.tokenOffered).safeTransferFrom(
             trade.proposer,
             _msgSender(),
-            trade.tokenId1
+            trade.offeredTokenId
         );
-        IERC721(trade.token2).safeTransferFrom(
+        IERC721(trade.tokenRequested).safeTransferFrom(
             _msgSender(),
             trade.proposer,
-            trade.tokenId2
+            trade.requestedTokenId
         );
 
         trade.status = TradeStatus.Completed;
 
-        nftInActiveTrade[address(trade.token1)][trade.tokenId1] = false;
-        nftInActiveTrade[address(trade.token2)][trade.tokenId2] = false;
+        nftInActiveTrade[address(trade.tokenOffered)][trade.offeredTokenId] = false;
+        nftInActiveTrade[address(trade.tokenRequested)][trade.requestedTokenId] = false;
 
         emit TradeAccepted(_tradeId, _msgSender());
     }
@@ -146,7 +145,7 @@ contract NFTTradeLogic is
 
         require(
             _msgSender() == trade.proposer ||
-                _msgSender() == IERC721(trade.token2).ownerOf(trade.tokenId2),
+                _msgSender() == IERC721(trade.tokenRequested).ownerOf(trade.requestedTokenId),
             "Only a trader involved can cancel the trade."
         );
         require(
@@ -156,8 +155,8 @@ contract NFTTradeLogic is
 
         trade.status = TradeStatus.Cancelled;
 
-        nftInActiveTrade[address(trade.token1)][trade.tokenId1] = false;
-        nftInActiveTrade[address(trade.token2)][trade.tokenId2] = false;
+        nftInActiveTrade[address(trade.tokenOffered)][trade.offeredTokenId] = false;
+        nftInActiveTrade[address(trade.tokenRequested)][trade.requestedTokenId] = false;
 
         emit TradeCancelled(_tradeId, _msgSender());
     }
